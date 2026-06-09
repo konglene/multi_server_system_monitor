@@ -1,0 +1,8 @@
+.idea/
+__pycache__/
+*.pyc
+.venv/
+agent_token.txt
+certs/
+*.key
+*.pem

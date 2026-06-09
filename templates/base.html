@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{% block title %}sysmon{% endblock %}</title>
+  <link rel="stylesheet" href="{{ asset_url('style.css') }}">
+</head>
+<body>
+  {% if session.user_id %}
+  <nav class="nav">
+    <div class="nav-brand">
+      <span class="nav-logo">⬡</span>
+      <span class="nav-title">sysmon</span>
+    </div>
+    <div class="nav-links">
+      <a href="{{ url_for('dashboard') }}" class="nav-link {% if request.endpoint == 'dashboard' %}active{% endif %}">
+        <span class="nav-icon">▣</span> Dashboard
+      </a>
+      <a href="{{ url_for('servers') }}" class="nav-link {% if request.endpoint == 'servers' %}active{% endif %}">
+        <span class="nav-icon">⬡</span> Servers
+      </a>
+      <a href="{{ url_for('commands') }}" class="nav-link {% if request.endpoint == 'commands' %}active{% endif %}">
+        <span class="nav-icon">❯</span> Commands
+      </a>
+      <a href="{{ url_for('logs') }}" class="nav-link {% if request.endpoint == 'logs' %}active{% endif %}">
+        <span class="nav-icon">≡</span> Logs
+      </a>
+    </div>
+    <div class="nav-right">
+      <span class="nav-user">{{ session.username }}</span>
+      <a href="{{ url_for('logout') }}" class="nav-logout">logout</a>
+    </div>
+  </nav>
+  {% endif %}
+
+  <main class="main">
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        <div class="flash-container">
+          {% for category, message in messages %}
+            <div class="flash flash-{{ category }}">{{ message }}</div>
+          {% endfor %}
+        </div>
+      {% endif %}
+    {% endwith %}
+
+    {% block content %}{% endblock %}
+  </main>
+
+  {% block scripts %}{% endblock %}
+</body>
+</html>

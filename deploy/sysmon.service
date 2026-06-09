@@ -1,0 +1,12 @@
+[Unit]
+Description=sysmon Flask app
+After=network.target
+
+[Service]
+User=YOUR_USER
+WorkingDirectory=/opt/sysmon
+ExecStart=/opt/sysmon/.venv/bin/gunicorn --workers 2 --bind 127.0.0.1:5000 app:app
+Restart=always
+
+[Install]
+WantedBy=multi-user.target

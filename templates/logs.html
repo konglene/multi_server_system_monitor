@@ -1,0 +1,93 @@
+{% extends "base.html" %}
+{% block title %}sysmon — logs{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <h2 class="page-title">logs</h2>
+  <form class="search-form" method="GET" action="{{ url_for('logs') }}">
+    <input type="text"
+           name="q"
+           class="search-input"
+           placeholder="search logs…"
+           value="{{ q }}">
+    <button type="submit" class="btn btn-sm btn-primary">search</button>
+    {% if q %}
+    <a href="{{ url_for('logs') }}" class="btn btn-sm btn-ghost">clear</a>
+    {% endif %}
+  </form>
+</div>
+
+{% if logs %}
+<div class="log-table-wrap">
+  <table class="log-table">
+    <thead>
+      <tr>
+        <th>TIME</th>
+        <th>TYPE</th>
+        <th>SERVER</th>
+        <th>USER</th>
+        <th>DETAIL</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for row in logs %}
+      <tr class="log-row log-{{ row.log_type }}"
+          onclick="toggleExtra(this)">
+        <td class="log-ts">{{ row.ts.strftime('%Y-%m-%d %H:%M:%S') if row.ts else '—' }}</td>
+        <td class="log-type">
+          {% if row.log_type == 'command' %}
+          <span class="badge badge-cmd">cmd</span>
+          {% elif row.detail == 'online' %}
+          <span class="badge badge-online">online</span>
+          {% elif row.detail == 'offline' %}
+          <span class="badge badge-offline">offline</span>
+          {% else %}
+          <span class="badge badge-event">event</span>
+          {% endif %}
+        </td>
+        <td class="log-server">{{ row.server_name or '—' }}</td>
+        <td class="log-user">{{ row.username or '—' }}</td>
+        <td class="log-detail">
+          <code>{{ row.detail or '—' }}</code>
+        </td>
+      </tr>
+      {% if row.extra %}
+      <tr class="log-extra-row" style="display:none">
+        <td colspan="5">
+          <pre class="log-extra">{{ row.extra }}</pre>
+        </td>
+      </tr>
+      {% endif %}
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+<div class="pagination">
+  {% if page > 1 %}
+  <a href="?page={{ page - 1 }}{% if q %}&q={{ q }}{% endif %}" class="page-btn">← prev</a>
+  {% endif %}
+  <span class="page-info">page {{ page }}</span>
+  {% if logs|length == 50 %}
+  <a href="?page={{ page + 1 }}{% if q %}&q={{ q }}{% endif %}" class="page-btn">next →</a>
+  {% endif %}
+</div>
+
+{% else %}
+<div class="empty-state">
+  <div class="empty-icon">≡</div>
+  <p class="empty-text">{% if q %}No results for "{{ q }}".{% else %}No logs yet.{% endif %}</p>
+</div>
+{% endif %}
+{% endblock %}
+
+{% block scripts %}
+<script>
+function toggleExtra(row) {
+  const next = row.nextElementSibling;
+  if (next && next.classList.contains('log-extra-row')) {
+    next.style.display = next.style.display === 'none' ? 'table-row' : 'none';
+  }
+}
+</script>
+{% endblock %}

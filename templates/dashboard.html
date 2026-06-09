@@ -1,0 +1,126 @@
+{% extends "base.html" %}
+{% block title %}sysmon — dashboard{% endblock %}
+
+{% block content %}
+
+{# ─── Page header ────────────────────────────────────────────────────────── #}
+<div class="page-header">
+  <h2 class="page-title">dashboard</h2>
+  <div class="page-meta">
+    <span class="dot dot-green"></span>
+    <span id="poll-status" style="font-size:0.72rem;color:var(--text-muted)">loading…</span>
+  </div>
+</div>
+
+{# ─── Summary bar ─────────────────────────────────────────────────────────── #}
+<div class="summary-bar">
+  <span class="sum-item">TOTAL
+    <strong id="summary-total">{{ servers | length }}</strong>
+  </span>
+  <span class="sum-item online">ONLINE
+    <strong id="summary-online">
+      {{ servers | selectattr('status', 'equalto', 'online') | list | length }}
+    </strong>
+  </span>
+  <span class="sum-item offline">OFFLINE
+    <strong id="summary-offline">
+      {{ servers | rejectattr('status', 'equalto', 'online') | list | length }}
+    </strong>
+  </span>
+  <span class="sum-item">AVG CPU
+    <strong id="summary-avg-cpu">—</strong>
+  </span>
+</div>
+
+{# ─── Server grid ─────────────────────────────────────────────────────────── #}
+{# Cards are server-side rendered on first load so there's no blank flash.    #}
+{# dashboard.js then takes over, updating them in-place every 10 s.           #}
+<div id="server-grid" class="server-grid">
+  {% for s in servers %}
+  {%- set cpu  = (s.cpu_percent    | default(0, true)) | float -%}
+  {%- set ram  = (s.memory_percent | default(0, true)) | float -%}
+  {%- set disk = (s.disk_percent   | default(0, true)) | float -%}
+
+  {%- macro bar_cls(v) -%}
+    {{ 'bar-crit' if v >= 90 else ('bar-warn' if v >= 80 else 'bar-ok') }}
+  {%- endmacro -%}
+
+  <div class="server-card" data-server-id="{{ s.id }}">
+
+    <div class="card-header">
+      <div class="card-title-row">
+        <span class="server-name">{{ s.name }}</span>
+        <span class="status-badge {{ s.status }}">{{ s.status }}</span>
+      </div>
+      <div class="server-meta">
+        <span class="server-ip">{{ s.ip_address }}</span>
+        <span class="os-badge">{{ s.os_type or 'linux' }}</span>
+      </div>
+    </div>
+
+    <div class="card-metrics">
+      <div class="metric metric-cpu">
+        <div class="metric-label">CPU</div>
+        <div class="bar-track">
+          <div class="bar-fill {{ bar_cls(cpu) }}" style="width:{{ cpu | round | int }}%"></div>
+        </div>
+        <div class="metric-val">{{ '%d%%' | format(cpu | round | int) }}</div>
+      </div>
+
+      <div class="metric metric-ram">
+        <div class="metric-label">RAM</div>
+        <div class="bar-track">
+          <div class="bar-fill {{ bar_cls(ram) }}" style="width:{{ ram | round | int }}%"></div>
+        </div>
+        <div class="metric-val">{{ '%d%%' | format(ram | round | int) }}</div>
+      </div>
+
+      <div class="metric metric-disk">
+        <div class="metric-label">DISK</div>
+        <div class="bar-track">
+          <div class="bar-fill {{ bar_cls(disk) }}" style="width:{{ disk | round | int }}%"></div>
+        </div>
+        <div class="metric-val">{{ '%d%%' | format(disk | round | int) }}</div>
+      </div>
+
+      <div class="metric metric-uptime">
+        <div class="metric-label">UPTIME</div>
+        <div class="metric-val uptime-val">{{ s.uptime_seconds | uptime }}</div>
+      </div>
+    </div>
+
+    <div class="card-footer">
+      <span class="last-seen">
+        {% if s.last_seen %}Last seen {{ s.last_seen.strftime('%H:%M') }}{% else %}Never seen{% endif %}
+      </span>
+      <span class="card-hint">click for history</span>
+    </div>
+
+  </div>
+  {% endfor %}
+</div>
+
+{# ─── Empty state ─────────────────────────────────────────────────────────── #}
+{# Visible on first load when there are no servers; JS controls it thereafter. #}
+<div id="empty-state"{% if servers %} style="display:none"{% endif %}>
+  <div class="empty-icon">⬡</div>
+  <p class="empty-text">No servers yet. <a href="{{ url_for('servers') }}">Add one →</a></p>
+</div>
+
+{# ─── Modal overlay ───────────────────────────────────────────────────────── #}
+<div id="modal-overlay"></div>
+
+{# ─── History modal ───────────────────────────────────────────────────────── #}
+<div id="history-modal">
+  <div class="modal-header">
+    <span class="modal-title">history</span>
+    <button id="modal-close" title="Close">✕</button>
+  </div>
+  <div class="modal-body"></div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ asset_url('dashboard.js') }}"></script>
+{% endblock %}

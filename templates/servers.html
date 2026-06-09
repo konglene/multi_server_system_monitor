@@ -1,0 +1,131 @@
+{% extends "base.html" %}
+{% block title %}sysmon — servers{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <h2 class="page-title">servers</h2>
+  <button class="btn btn-primary" onclick="toggleAddForm()">+ add server</button>
+</div>
+
+<!-- Add Server Form -->
+<div id="add-form" class="add-form-panel" style="display:none">
+  <div class="panel-label">NEW SERVER</div>
+  <form method="POST" action="{{ url_for('add_server') }}" class="add-form">
+    <div class="form-row">
+      <div class="field">
+        <label class="field-label">NAME</label>
+        <input type="text" name="name" class="field-input" placeholder="prod-web-01" required>
+      </div>
+      <div class="field">
+        <label class="field-label">IP ADDRESS</label>
+        <input type="text" name="ip_address" class="field-input" placeholder="192.168.1.10" required>
+      </div>
+      <div class="field field-sm">
+        <label class="field-label">AGENT PORT</label>
+        <input type="number" name="agent_port" class="field-input" value="5001">
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="field">
+        <label class="field-label">AUTH TOKEN</label>
+        <input type="text" name="auth_token" class="field-input" placeholder="must match AGENT_TOKEN on server" required>
+      </div>
+      <div class="field field-sm">
+        <label class="field-label">OS TYPE</label>
+        <select name="os_type" class="field-input">
+          <option value="linux">Linux</option>
+          <option value="windows">Windows</option>
+        </select>
+      </div>
+      <div class="field field-action">
+        <label class="field-label">&nbsp;</label>
+        <button type="submit" class="btn btn-primary">ADD SERVER</button>
+      </div>
+    </div>
+  </form>
+</div>
+
+<!-- Server Table -->
+{% if servers %}
+<div class="server-table-wrap">
+  <table class="server-table">
+    <thead>
+      <tr>
+        <th>STATUS</th>
+        <th>NAME</th>
+        <th>IP ADDRESS</th>
+        <th>PORT</th>
+        <th>OS</th>
+        <th>LAST SEEN</th>
+        <th></th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for s in servers %}
+      <tr>
+        <td>
+          <span class="dot {% if s.status == 'online' %}dot-green{% else %}dot-red{% endif %}"></span>
+          <span class="{% if s.status == 'online' %}text-green{% else %}text-red{% endif %}">
+            {{ s.status }}
+          </span>
+        </td>
+        <td class="server-name-cell">{{ s.name }}</td>
+        <td><code>{{ s.ip_address }}</code></td>
+        <td><code>{{ s.agent_port }}</code></td>
+        <td>{{ s.os_type }}</td>
+        <td class="text-muted">{{ s.last_seen.strftime('%Y-%m-%d %H:%M') if s.last_seen else 'never' }}</td>
+        <td>
+          <form method="POST"
+                action="{{ url_for('delete_server', server_id=s.id) }}"
+                onsubmit="return confirm('Delete server {{ s.name }}?')">
+            <button type="submit" class="btn btn-sm btn-danger">delete</button>
+          </form>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+{% else %}
+<div class="empty-state">
+  <div class="empty-icon">⬡</div>
+  <p class="empty-text">No servers yet. Add one above.</p>
+</div>
+{% endif %}
+
+<div class="agent-instructions">
+  <div class="panel-label">AGENT DEPLOYMENT</div>
+  <div class="instructions-grid">
+    <div class="instr-card">
+      <div class="instr-title">Linux</div>
+      <pre class="instr-pre">
+1. Copy agent.py to the server
+2. pip install flask psutil
+3. export AGENT_TOKEN=your_secret_token
+4. python agent.py
+   (or create a systemd service)</pre>
+    </div>
+    <div class="instr-card">
+      <div class="instr-title">Windows</div>
+      <pre class="instr-pre">
+1. Install Python 3 (add to PATH)
+2. Copy agent.py to C:\sysmon\
+3. pip install flask psutil
+4. set AGENT_TOKEN=your_secret_token
+5. python C:\sysmon\agent.py
+   (or register with NSSM)</pre>
+    </div>
+  </div>
+  <p class="instr-note">The auth token in AGENT_TOKEN must match what you enter above.</p>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function toggleAddForm() {
+  const f = document.getElementById('add-form');
+  f.style.display = f.style.display === 'none' ? 'block' : 'none';
+}
+</script>
+{% endblock %}

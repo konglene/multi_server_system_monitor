@@ -1,0 +1,12 @@
+[Unit]
+Description=sysmon agent
+After=network.target
+
+[Service]
+ExecStart=/usr/bin/python3 /opt/sysmon/agent.py
+Environment=AGENT_TOKEN=YOUR_AGENT_TOKEN
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target

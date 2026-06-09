@@ -1,0 +1,122 @@
+{% extends "base.html" %}
+{% block title %}sysmon — commands{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <h2 class="page-title">remote commands</h2>
+  <p class="page-sub">Execute commands on monitored servers via agent</p>
+</div>
+
+<div class="cmd-layout">
+  <div class="cmd-panel">
+    <div class="panel-label">TARGET</div>
+    <select id="server-select" class="field-input">
+      <option value="all">── All Servers ──</option>
+      {% for s in servers %}
+      <option value="{{ s.id }}">{{ s.name }} ({{ s.ip_address }})</option>
+      {% endfor %}
+    </select>
+
+    <div class="panel-label" style="margin-top:1.5rem;">COMMAND</div>
+    <div class="cmd-input-wrap">
+      <span class="cmd-prompt">❯</span>
+      <input type="text"
+             id="cmd-input"
+             class="cmd-input"
+             placeholder="uptime"
+             autocomplete="off"
+             autofocus>
+    </div>
+
+    <div class="cmd-shortcuts">
+      <span class="shortcuts-label">QUICK:</span>
+      {% for cmd in ['uptime', 'df -h', 'free -m', 'ps aux | head -20', 'top -bn1 | head -20', 'netstat -tuln', 'cat /etc/os-release'] %}
+      <button class="shortcut-btn" onclick="setCmd('{{ cmd }}')">{{ cmd }}</button>
+      {% endfor %}
+    </div>
+
+    <button id="run-btn" class="btn btn-primary" onclick="runCommand()">
+      <span>RUN</span>
+      <span class="btn-icon">❯</span>
+    </button>
+  </div>
+
+  <div class="output-panel">
+    <div class="output-header">
+      <span class="panel-label">OUTPUT</span>
+      <button class="btn btn-sm btn-ghost" onclick="clearOutput()">clear</button>
+    </div>
+    <div id="output-area" class="output-area">
+      <span class="output-placeholder">// output will appear here</span>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function setCmd(cmd) {
+  document.getElementById('cmd-input').value = cmd;
+  document.getElementById('cmd-input').focus();
+}
+
+function clearOutput() {
+  document.getElementById('output-area').innerHTML =
+    '<span class="output-placeholder">// output will appear here</span>';
+}
+
+async function runCommand() {
+  const server_id = document.getElementById('server-select').value;
+  const command = document.getElementById('cmd-input').value.trim();
+  const btn = document.getElementById('run-btn');
+  const output = document.getElementById('output-area');
+
+  if (!command) return;
+
+  btn.disabled = true;
+  btn.innerHTML = '<span>RUNNING…</span>';
+  output.innerHTML = '<span class="output-placeholder">// executing...</span>';
+
+  const form = new FormData();
+  form.append('server_id', server_id);
+  form.append('command', command);
+
+  try {
+    const resp = await fetch('/send_command', { method: 'POST', body: form });
+    const data = await resp.json();
+
+    if (data.error) {
+      output.innerHTML = `<div class="output-error">${escHtml(data.error)}</div>`;
+      return;
+    }
+
+    output.innerHTML = '';
+    for (const r of data.results) {
+      const block = document.createElement('div');
+      block.className = 'output-block';
+      block.innerHTML = `
+        <div class="output-server">── ${escHtml(r.server)} ──</div>
+        <pre class="output-pre">${escHtml(r.output || '(no output)')}</pre>
+      `;
+      output.appendChild(block);
+    }
+  } catch (e) {
+    output.innerHTML = `<div class="output-error">Request failed: ${e}</div>`;
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = '<span>RUN</span><span class="btn-icon">❯</span>';
+  }
+}
+
+function escHtml(s) {
+  return String(s)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;');
+}
+
+document.getElementById('cmd-input').addEventListener('keydown', e => {
+  if (e.key === 'Enter') runCommand();
+});
+</script>
+{% endblock %}

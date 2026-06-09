@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+{% block title %}sysmon — login{% endblock %}
+
+{% block content %}
+<div class="login-wrap">
+  <div class="login-card">
+    <div class="login-header">
+      <div class="login-logo">⬡</div>
+      <h1 class="login-title">sysmon</h1>
+      <p class="login-sub">server monitoring console</p>
+    </div>
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        {% for category, message in messages %}
+          <div class="flash flash-{{ category }}">{{ message }}</div>
+        {% endfor %}
+      {% endif %}
+    {% endwith %}
+
+    <form method="POST" action="{{ url_for('login') }}" class="login-form">
+      <div class="field">
+        <label class="field-label">USERNAME</label>
+        <input type="text" name="username" class="field-input" autocomplete="username" autofocus required>
+      </div>
+      <div class="field">
+        <label class="field-label">PASSWORD</label>
+        <input type="password" name="password" class="field-input" autocomplete="current-password" required>
+      </div>
+      <button type="submit" class="btn btn-primary btn-full">AUTHENTICATE</button>
+    </form>
+
+    <div class="login-footer">
+      <span class="dot dot-green"></span> system ready
+    </div>
+  </div>
+</div>
+{% endblock %}
